@@ -78,7 +78,8 @@ public class FieldsProcessor extends AbstractProcessor {
         // =========================
         for (FieldMeta f : fields) {
 
-            TypeName mainType = TypeName.get(f.type);
+//            TypeName mainType = TypeName.get(f.type);
+            TypeName mainType = getRawTypeName(f.type);
 
             TypeName elemType = f.elementType != null
                     ? TypeName.get(f.elementType)
@@ -177,6 +178,13 @@ public class FieldsProcessor extends AbstractProcessor {
         JavaFile.builder(pkg, clazz.build())
                 .build()
                 .writeTo(processingEnv.getFiler());
+    }
+
+    private TypeName getRawTypeName(TypeMirror t) {
+        if (t instanceof DeclaredType dt) {
+            return ClassName.get((TypeElement) dt.asElement());
+        }
+        return TypeName.get(t);
     }
 
     // =========================
