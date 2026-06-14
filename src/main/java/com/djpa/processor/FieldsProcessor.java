@@ -1,15 +1,15 @@
 package com.djpa.processor;
 
-import com.djpa.annotations.FieldProperty;
 import com.djpa.annotations.GenerateFields;
+import com.djpa.annotations.FieldProperty;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.*;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
-
-import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.*;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.util.*;
@@ -18,6 +18,14 @@ import java.util.*;
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 @AutoService(Processor.class)
 public class FieldsProcessor extends AbstractProcessor {
+
+    private Types typeUtils;
+
+    @Override
+    public synchronized void init(ProcessingEnvironment env) {
+        super.init(env);
+        this.typeUtils = env.getTypeUtils();
+    }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -29,17 +37,23 @@ public class FieldsProcessor extends AbstractProcessor {
             try {
                 generate(typeElement);
             } catch (Exception e) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage());
+                processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Generation failed: " + e.getMessage()
+                );
             }
         }
-
         return true;
     }
 
+    // =========================
+    // MAIN GENERATION
+    // =========================
     private void generate(TypeElement typeElement) throws IOException {
 
         String packageName = processingEnv.getElementUtils()
-                .getPackageOf(typeElement).toString();
+                .getPackageOf(typeElement)
+                .getQualifiedName().toString();
 
         String originalName = typeElement.getSimpleName().toString();
         String generatedName = originalName + "Fields";
@@ -55,58 +69,65 @@ public class FieldsProcessor extends AbstractProcessor {
 
         List<FieldInfo> fields = extractFields(typeElement, isRecord);
 
-        List<String> fieldPropertyNames = new ArrayList<>();
+        List<String> fieldNames = new ArrayList<>();
 
         // =========================
-        // FIELD PROPERTIES
+        // STRING CONSTANTS + FIELD PROPERTIES
         // =========================
         for (FieldInfo f : fields) {
 
-            String varName = f.variableName; // lowercase field name
+            // STRING constant name (ID, NAME, etc.)
+            String CONST = toConstName(f.name);
 
-            FieldSpec fieldSpec = FieldSpec.builder(
+            clazz.addField(FieldSpec.builder(String.class, CONST,
+                            Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                    .initializer("$S", f.name)
+                    .build());
+
+            // FieldProperty variable name (id, name)
+            String varName = f.name;
+
+            TypeName tType = TypeName.get(f.type);
+            TypeName eType = f.elementType != null
+                    ? TypeName.get(f.elementType)
+                    : ClassName.get(Void.class);
+
+            clazz.addField(FieldSpec.builder(
                             ParameterizedTypeName.get(
                                     ClassName.get(FieldProperty.class),
-                                    ClassName.get(f.type),
-                                    ClassName.get(f.elementType)
+                                    tType,
+                                    eType
                             ),
                             varName,
-                            Modifier.PUBLIC,
-                            Modifier.STATIC,
-                            Modifier.FINAL
+                            Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL
                     )
-                    .initializer("new $T($S, $T.class, $L)",
+                    .initializer("new $T($L, $T.class, $L)",
                             FieldProperty.class,
-                            f.name,
-                            ClassName.get(f.type),
-                            f.elementType == null ? "null" : f.elementType + ".class"
+                            CONST,
+                            tType,
+                            f.elementType != null ? "$T.class" : "null"
                     )
-                    .build();
+                    .build());
 
-            clazz.addField(fieldSpec);
-            fieldPropertyNames.add(varName);
+            fieldNames.add(varName);
         }
 
         // =========================
         // ALL_FIELDS
         // =========================
-        CodeBlock allFields = CodeBlock.builder()
-                .add("List.of(")
-                .add(String.join(", ", fieldPropertyNames))
-                .add(")")
-                .build();
-
         clazz.addField(FieldSpec.builder(
                         ParameterizedTypeName.get(
                                 ClassName.get(List.class),
-                                WildcardTypeName.subtypeOf(Object.class)
+                                ParameterizedTypeName.get(
+                                        ClassName.get(FieldProperty.class),
+                                        WildcardTypeName.subtypeOf(Object.class),
+                                        WildcardTypeName.subtypeOf(Object.class)
+                                )
                         ),
                         "ALL_FIELDS",
-                        Modifier.PUBLIC,
-                        Modifier.STATIC,
-                        Modifier.FINAL
+                        Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL
                 )
-                .initializer(allFields)
+                .initializer("List.of(" + String.join(",", fieldNames) + ")")
                 .build());
 
         // =========================
@@ -114,14 +135,15 @@ public class FieldsProcessor extends AbstractProcessor {
         // =========================
         MethodSpec.Builder getType = MethodSpec.methodBuilder("getType")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(ParameterizedTypeName.get(ClassName.get(Class.class), WildcardTypeName.subtypeOf(Object.class)))
+                .returns(ParameterizedTypeName.get(ClassName.get(Class.class),
+                        WildcardTypeName.subtypeOf(Object.class)))
                 .addParameter(String.class, "name");
 
         getType.beginControlFlow("switch(name)");
 
         for (FieldInfo f : fields) {
             getType.addStatement("case $S -> { return $T.class; }",
-                    f.name, ClassName.get(f.type));
+                    f.name, TypeName.get(f.type));
         }
 
         getType.addStatement("default -> throw new IllegalArgumentException($S + name)", "Unknown field: ");
@@ -136,7 +158,11 @@ public class FieldsProcessor extends AbstractProcessor {
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .returns(ParameterizedTypeName.get(
                         ClassName.get(List.class),
-                        WildcardTypeName.subtypeOf(Object.class)
+                        ParameterizedTypeName.get(
+                                ClassName.get(FieldProperty.class),
+                                WildcardTypeName.subtypeOf(Object.class),
+                                WildcardTypeName.subtypeOf(Object.class)
+                        )
                 ))
                 .addParameter(ClassName.get(typeElement), "obj");
 
@@ -148,13 +174,13 @@ public class FieldsProcessor extends AbstractProcessor {
 
         for (FieldInfo f : fields) {
 
-            String getter = f.getter;
+            String getter = resolveGetter(f);
 
             if (f.primitive) {
-                getProperty.addStatement("list.add($L)", f.variableName);
+                getProperty.addStatement("list.add($L)", f.name);
             } else {
                 getProperty.beginControlFlow("if (obj.$L() != null)", getter);
-                getProperty.addStatement("list.add($L)", f.variableName);
+                getProperty.addStatement("list.add($L)", f.name);
                 getProperty.endControlFlow();
             }
         }
@@ -182,7 +208,7 @@ public class FieldsProcessor extends AbstractProcessor {
 
         for (FieldInfo f : fields) {
 
-            String getter = f.getter;
+            String getter = resolveGetter(f);
 
             if (f.primitive) {
                 mapMethod.addStatement("map.put($S, obj.$L())", f.name, getter);
@@ -212,23 +238,18 @@ public class FieldsProcessor extends AbstractProcessor {
         List<FieldInfo> fields = new ArrayList<>();
 
         if (isRecord) {
-
             for (RecordComponentElement r : typeElement.getRecordComponents()) {
-                fields.add(new FieldInfo(r.getSimpleName().toString(), r.asType()));
+                fields.add(createField(r.getSimpleName().toString(), r.asType()));
             }
-
         } else {
-
             for (Element e : typeElement.getEnclosedElements()) {
 
-                if (e.getKind() == ElementKind.FIELD) {
+                if (e.getKind() != ElementKind.FIELD) continue;
 
-                    VariableElement v = (VariableElement) e;
+                VariableElement v = (VariableElement) e;
+                if (v.getModifiers().contains(Modifier.STATIC)) continue;
 
-                    if (v.getModifiers().contains(Modifier.STATIC)) continue;
-
-                    fields.add(new FieldInfo(v.getSimpleName().toString(), v.asType()));
-                }
+                fields.add(createField(v.getSimpleName().toString(), v.asType()));
             }
         }
 
@@ -236,27 +257,60 @@ public class FieldsProcessor extends AbstractProcessor {
     }
 
     // =========================
+    // FIELD INFO CREATION
+    // =========================
+    private FieldInfo createField(String name, TypeMirror mirror) {
+
+        boolean isCollection = isCollection(mirror);
+
+        TypeMirror elementType = null;
+
+        if (isCollection && mirror instanceof DeclaredType dt && !dt.getTypeArguments().isEmpty()) {
+            elementType = dt.getTypeArguments().get(0);
+        }
+
+        return new FieldInfo(
+                name,
+                mirror,
+                elementType,
+                mirror.getKind().isPrimitive()
+        );
+    }
+
+    private boolean isCollection(TypeMirror mirror) {
+        String name = mirror.toString();
+        return name.startsWith("java.util.List")
+                || name.startsWith("java.util.Set")
+                || name.startsWith("java.util.Collection");
+    }
+
+    private String resolveGetter(FieldInfo f) {
+        String cap = Character.toUpperCase(f.name.charAt(0)) + f.name.substring(1);
+
+        if (f.type.toString().equals("boolean")) {
+            return "is" + cap;
+        }
+        return "get" + cap;
+    }
+
+    private String toConstName(String name) {
+        return name.toUpperCase();
+    }
+
+    // =========================
     // MODEL
     // =========================
     static class FieldInfo {
-
         String name;
-        String variableName;
-        String getter;
-        Class<?> type;
-        Class<?> elementType;
+        TypeMirror type;
+        TypeMirror elementType;
         boolean primitive;
 
-        FieldInfo(String name, TypeMirror mirror) {
-
+        FieldInfo(String name, TypeMirror type, TypeMirror elementType, boolean primitive) {
             this.name = name;
-            this.variableName = name; // keep lowercase as requested
-            this.getter = "get" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
-
-            this.type = Class.class; // placeholder (simplified in processor)
-            this.elementType = null;
-
-            this.primitive = mirror.getKind().isPrimitive();
+            this.type = type;
+            this.elementType = elementType;
+            this.primitive = primitive;
         }
     }
 }
