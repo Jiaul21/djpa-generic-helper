@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public interface GenericUpdate<E, ID> {
+public interface UpdateHelper<E, ID> {
 
     E updateEntity(ID id, Consumer<E> updater);
 
@@ -13,19 +13,11 @@ public interface GenericUpdate<E, ID> {
 
     int updateFieldsByIDIn(Collection<ID> ids, Map<String, Object> fields);
 
-    int updateField(String cName, Object cValue, String fieldName, Object value);
+    int updateField(String fieldName, Object fieldValue, String cName, Object cValue);
 
-//    int updateFieldForBulk(String fieldName, Object value, Collection<ID> ids);
-
-//    int updateFieldForBulk(String fieldName, List<? extends IdFieldValue> dtos);
+    int updateFieldsByConditions(Map<String, Object> fields, Map<String, Object> conditions);
 
     int bulkUpdate(String fieldName, List<? extends IdFieldValue> fields);
-
-//    int updateBulkEntity(List<ID> ids, List<? extends IdFieldValue> fields);
-
-//    int updateFields(ID id, Map<String, Object> fields);
-
-    Object convertValue(String fieldName, Object value);
 
     Map<Object, List<Long>> groupFields(List<? extends IdFieldValue> fields);
 

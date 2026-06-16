@@ -1,4 +1,4 @@
-package com.djpa.core.dynamicquery.dto;
+package com.djpa.core.dynamicfilter.dto;
 
 public enum Operator {
 

@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.djpa.generichelper</groupId>
-    <artifactId>djpa-generic-helper</artifactId>
-    <version>1.0.8</version>
+    <groupId>com.djpa.helper</groupId>
+    <artifactId>djpa-helper</artifactId>
+    <version>1.0.10</version>
     <packaging>jar</packaging>
 
     <name>djpa-generic-helper</name>
@@ -23,13 +23,14 @@
         <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
         <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
         <querydsl.version>5.1.0</querydsl.version>
+        <lombok.version>1.18.46</lombok.version>
     </properties>
 
     <distributionManagement>
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/Jiaul21/djpa-generic-helper</url>
+            <url>https://maven.pkg.github.com/Jiaul21/djpa-helper</url>
         </repository>
     </distributionManagement>
 
@@ -83,6 +84,14 @@
             <classifier>jakarta</classifier>
             <optional>true</optional>
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.projectlombok</groupId>-->
+<!--            <artifactId>lombok</artifactId>-->
+<!--            <version>${lombok.version}</version>-->
+<!--            <scope>provided</scope>-->
+<!--            <optional>true</optional>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -110,6 +119,11 @@
                             <groupId>jakarta.persistence</groupId>
                             <artifactId>jakarta.persistence-api</artifactId>
                         </path>
+<!--                        <path>-->
+<!--                            <groupId>org.projectlombok</groupId>-->
+<!--                            <artifactId>lombok</artifactId>-->
+<!--                            <version>${lombok.version}</version>-->
+<!--                        </path>-->
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>

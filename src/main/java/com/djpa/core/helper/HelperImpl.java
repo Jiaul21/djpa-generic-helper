@@ -6,11 +6,11 @@ import com.djpa.core.repository.BaseRepository;
 import java.util.Collection;
 import java.util.List;
 
-public class GenericHelperImpl<E, ID> extends GenericUpdateImpl<E, ID> implements GenericHelper<E, ID> {
+public class HelperImpl<E, ID> extends UpdateHelperImpl<E, ID> implements Helper<E, ID> {
 
     private final BaseRepository<E, ID> baseRepository;
 
-    public GenericHelperImpl(Class<E> entityClass, BaseRepository<E, ID> baseRepository) {
+    public HelperImpl(Class<E> entityClass, BaseRepository<E, ID> baseRepository) {
         super(entityClass);
         this.baseRepository = baseRepository;
     }

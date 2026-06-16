@@ -1,11 +1,9 @@
-package com.djpa.core.dynamicquery.dto;
-
-//import lombok.Builder;
+package com.djpa.core.dynamicfilter.dto;
 
 import java.util.List;
 
-//@Builder
 public record TableResponse<T>(
+
         List<T> content,
         long contentSize,
         long totalElements,
@@ -14,5 +12,6 @@ public record TableResponse<T>(
         long size,
         boolean first,
         boolean last
+
 ) {
 }

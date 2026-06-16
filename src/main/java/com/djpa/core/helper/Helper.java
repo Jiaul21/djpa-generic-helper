@@ -3,7 +3,7 @@ package com.djpa.core.helper;
 import java.util.Collection;
 import java.util.List;
 
-public interface GenericHelper<E, ID> extends GenericUpdate<E, ID> {
+public interface Helper<E, ID> extends UpdateHelper<E, ID> {
 
     <T> T findById(ID id, Class<T> type);
 
