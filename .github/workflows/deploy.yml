@@ -30,9 +30,23 @@ jobs:
 
 
 #               ----- release way -----
-#   update version in pom.xml as <version>1.0.10</version>
+#   update version in pom.xml as <version>1.0.0</version>
+
+
+          #Test release
 #  git add .
-#  git commit -m "test release 1.0.10"
-#  git tag v1.0.10
+#  git commit -m "test release v1.0.0-beta : autoconfiguration, artifactId, groupId"
+#  git tag v1.0.0-beta
+#  git push origin v1.0.0-beta
 #  git push origin main
-#  git push origin v1.0.10
+
+
+          #Final release
+#  git add .
+#  git commit -m "release 1.0.1 : "
+#  git tag v1.0.1
+#  git push origin v1.0.1
+#  git push origin main
+
+
+# git tag -d v1.0.0-beta

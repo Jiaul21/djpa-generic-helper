@@ -2,6 +2,7 @@ package com.djpa.core.dynamicfilter.querydsl;
 
 import com.djpa.core.dynamicfilter.dto.TableRequest;
 import com.djpa.core.dynamicfilter.dto.TableResponse;
+import com.djpa.core.dynamicfilter.querydsl.dto.QueryFilterInfo;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.Expressions;
@@ -9,11 +10,9 @@ import com.querydsl.core.types.dsl.SimpleExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
-import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-@Service
 public class QueryExecutor {
 
     private final JPAQueryFactory queryFactory;

@@ -1,4 +1,4 @@
-package com.djpa.core.dynamicfilter.querydsl;
+package com.djpa.core.dynamicfilter.querydsl.dto;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;

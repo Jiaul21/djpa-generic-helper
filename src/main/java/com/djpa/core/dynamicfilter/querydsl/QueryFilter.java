@@ -2,6 +2,7 @@ package com.djpa.core.dynamicfilter.querydsl;
 
 import com.djpa.core.dynamicfilter.dto.FilterRequest;
 import com.djpa.core.dynamicfilter.dto.Operator;
+import com.djpa.core.dynamicfilter.querydsl.dto.QueryFilterInfo;
 import com.djpa.core.util.Converter;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Ops;
